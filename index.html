@@ -36,13 +36,13 @@
 						</div>
 						<nav>
 							<ul>
-								<li><a href="#start">START</a></li>
+								<li><a href="#start" class="button primary">START</a></li>
 							</ul>
 						</nav>
 						<nav>
 							<ul>
 								<li><a href="#intro">Intro</a></li>
-								<li><a href="#work">Work </a></li>
+								<li><a href="#work">Work</a></li>
 								<li><a href="#future">Future</a></li>
 								<li><a href="#teams">Teams</a></li>
 								<!--<li><a href="#elements">Elements</a></li>-->
@@ -54,13 +54,59 @@
 					<div id="main">
 
 
-						<!-- Intr-->
+						<!--start-->
 							<article id="start">
 								<h2 class="major">START</h2>
 								<span class="image main"><img src="images/pic01.jpg" alt="" /></span>
-								<p>Aenean ornare velit lacus, ac varius enim ullamcorper eu. Proin aliquam facilisis ante interdum congue. Integer mollis, nisl amet convallis, porttitor magna ullamcorper, amet egestas mauris. Ut magna finibus nisi nec lacinia. Nam maximus erat id euismod egestas. By the way, check out my <a href="#work">awesome work</a>.</p>
-								<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis dapibus rutrum facilisis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Etiam tristique libero eu nibh porttitor fermentum. Nullam venenatis erat id vehicula viverra. Nunc ultrices eros ut ultricies condimentum. Mauris risus lacus, blandit sit amet venenatis non, bibendum vitae dolor. Nunc lorem mauris, fringilla in aliquam at, euismod in lectus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. In non lorem sit amet elit placerat maximus. Pellentesque aliquam maximus risus, vel sed vehicula.</p>
-							</article>
+								<section>
+									<h3 class="major">Please Enter Your Pickup Info</h3>
+									<form id="pickup-form" method="post" action="#">
+										<div><h3>Location</h3></div>
+										<div class="fields">
+											<div class="field">
+												<label for="demo-category">Select Borough</label>
+												<select name="demo-category" id="demo-category">
+													<option value="">-</option>
+													<option value="Manhattan">Manhattan</option>
+													<option value="Brooklyn">Brooklyn</option>
+													<option value="Queens">Queens</option>
+													<option value="The Bronx">The Bronx</option>
+													<option value="Staten Island">Staten Island</option>
+												</select>
+											</div>
+											<div class="field half">
+												<label for="demo-locations">Location</label>
+												<input type="text" name="demo-address" id="demo-address" value="" placeholder="370 Jay St" />
+											</div>
+											<div class="field half">
+												<label for="demo-zip">Zip Code</label>
+												<input type="text" name="demo-zip" id="demo-zip" value="" placeholder="11201" />
+											</div>
+										</div>
+										<div><h3>Time</h3></div>
+										<div class="fields">
+											<div class="field half">
+												<label for="demo-date">Select Date</label>
+												<input type="date" name="demo-date" id="demo-date" value="" placeholder=""/>
+											</div>
+											<div class="field half">
+												<label for="demo-time">Select Time</label>
+												<input type="time" name="demo-time" id="demo-time" class="timepicker" />
+											</div>
+										</div>
+										<ul class="actions">
+											<li><input onclick="showResult()" type="result" value="Start Searching" class="button primary" /></li>
+											<li><input onclick="resetResult()" type="reset" value="Reset" id="reset-btn"/></li>
+										</ul>
+									</form>
+									<section class="result" style="display: none;">
+										<h3 class="major">Your searching results</h3>
+										<blockquote>insert your interactive map here. Remember to show the calculated revenue for each result. Using a "user-click" or "hover" and then show a mark or something.</blockquote>
+									</section>
+														
+								</section>
+
+								</article>
 						<!-- Intro -->
 							<article id="intro">
 								<h2 class="major">Intro</h2>
@@ -88,7 +134,36 @@
 							<article id="teams">
 								<h2 class="major">Teams</h2>
 								<span class="image main"><img src="images/pic03.jpg" alt="" /></span>
-								<p>Lorem ipsum dolor sit amet, consectetur et adipiscing elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac. Aliquam erat volutpat. Praesent urna nisi, fringila lorem et vehicula lacinia quam. Integer sollicitudin mauris nec lorem luctus ultrices. Aliquam libero et malesuada fames ac ante ipsum primis in faucibus. Cras viverra ligula sit amet ex mollis mattis lorem ipsum dolor sit amet.</p>
+								<section>
+									<h3 class="major">Teammates in CS-GY 6513 Big Data 2023 Fall Final</h3>
+									<div class="table-wrapper">
+										<table>
+											<thead>
+												<tr>
+													<th>Name</th>
+													<th>Net ID (NYU email)</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr>
+													<td>WEI-HENG LIN</td>
+													<td>whl318 (<a href="mailto:whl318@nyu.edu">whl318@nyu.edu</a>)</td>
+												</tr>
+												<tr>
+													<td>Guan-Cherng LIN</td>
+													<td>gl2547 (<a href="mailto:gl2547@nyu.edu">gl2547@nyu.edu</a>)</td>
+												</tr>
+												<tr>
+													<td>Ping Chang</td>
+													<td>ypc231 (<a href="mailto:ypc231@nyu.edu">ypc231@nyu.edu</a>)</td>
+												</tr>
+												<tr>
+													<td>Kevin Lee</td>
+													<td>kl3642 (<a href="mailto:kl3642@nyu.edu">kl3642@nyu.edu</a>)</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
 							</article>
 
 						<!-- Contact -->
@@ -382,6 +457,16 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+			<script>
+				let result = document.querySelector(".result");
 
+				function showResult(){
+					result.style.display ="block"
+				}
+
+				function resetResult(){
+					result.style.display ="none"
+				}
+			</script>
 	</body>
 </html>

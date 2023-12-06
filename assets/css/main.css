@@ -385,6 +385,8 @@ input, select, textarea {
 		text-transform: uppercase;
 	}
 
+	input[type ="date"],
+	input[type ="time"],
 	input[type="text"],
 	input[type="password"],
 	input[type="email"],
@@ -410,6 +412,8 @@ input, select, textarea {
 		width: 100%;
 	}
 
+		input[type ="date"]:invalid,
+		input[type ="time"]:invalid,
 		input[type="text"]:invalid,
 		input[type="password"]:invalid,
 		input[type="email"]:invalid,
@@ -418,7 +422,8 @@ input, select, textarea {
 		textarea:invalid {
 			box-shadow: none;
 		}
-
+		input[type ="time"]:focus,
+		input[type ="date"]:focus,
 		input[type="text"]:focus,
 		input[type="password"]:focus,
 		input[type="email"]:focus,
@@ -453,6 +458,8 @@ input, select, textarea {
 			display: none;
 		}
 
+	input[type ="time"],
+	input[type ="date"],
 	input[type="text"],
 	input[type="password"],
 	input[type="email"],
@@ -1103,7 +1110,8 @@ input, select, textarea {
 	button {
 		line-height: calc(2.75rem - 2px);
 	}
-
+	
+	
 /* BG */
 
 	#bg {
@@ -1140,9 +1148,12 @@ input, select, textarea {
 			-ms-transition-delay: 0.75s;
 			transition-delay: 0.75s;
 			background-image: linear-gradient(to top, rgba(19, 21, 25, 0.5), rgba(19, 21, 25, 0.5)), url("../../images/overlay.png");
-			background-size: auto, 256px 256px;
-			background-position: center, center;
-			background-repeat: no-repeat, repeat;
+			background-size: auto,
+ 256px 256px;
+			background-position: center,
+ center;
+			background-repeat: no-repeat,
+ repeat;
 			z-index: 2;
 		}
 
