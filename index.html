@@ -10,7 +10,11 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/css/map.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+		integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+		crossorigin=""/>
 	</head>
 	<body class="is-preload">
 
@@ -100,8 +104,10 @@
 										</ul>
 									</form>
 									<section class="result" style="display: none;">
-										<h3 class="major">Your searching results</h3>
-										<blockquote>insert your interactive map here. Remember to show the calculated revenue for each result. Using a "user-click" or "hover" and then show a mark or something.</blockquote>
+										<h3 class="major">Your search results</h3>
+										<div id="map">
+											
+										</div>
 									</section>
 														
 								</section>
@@ -471,11 +477,16 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+			<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+			integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+			crossorigin=""></script>
+			<script src="assets/js/map.js"></script>
 			<script>
 				let result = document.querySelector(".result");
 
 				function showResult(){
 					result.style.display ="block"
+					initializeMap(); // have to call the function here
 				}
 
 				function resetResult(){
