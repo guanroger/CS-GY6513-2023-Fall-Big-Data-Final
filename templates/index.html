@@ -64,7 +64,7 @@
 								<span class="image main"><img src="{{ url_for('static', filename='images/pic01.jpg')}}" alt="" /></span>
 								<section>
 									<h3 class="major">Please Enter Your Pickup Info</h3>
-									<form id="pickup-form" method="post" action="#">
+									<form id="pickup-form" method="post" action="javascript:showResult()">
 										<div><h3>Location</h3></div>
 										<div class="fields">
 											<div class="field">
@@ -99,8 +99,8 @@
 											</div>
 										</div>
 										<ul class="actions">
-											<li><input onclick="showResult()" type="result" value="Start Searching" class="button primary" /></li>
-											<li><input onclick="resetResult()" type="reset" value="Reset" id="reset-btn"/></li>
+											<li><input type="submit" value="Start Searching" class="button primary" /></li>
+											<li><input type="reset" value="Reset" id="reset-btn"/></li>
 										</ul>
 									</form>
 									<section class="result" style="display: none;">
@@ -530,8 +530,33 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 				let result = document.querySelector(".result");
 
 				function showResult(){
-					result.style.display ="block"
-					initializeMap(); // have to call the function here
+					// result.style.display ="block"
+					// initializeMap(); // have to call the function here
+				    // Prevent the default form submission
+					// event.preventDefault();
+					removeMap(); // only removes if a map existed already
+					console.log("Form submitted")
+
+					// Gather form data
+					var formData = new FormData(document.getElementById('pickup-form'));
+
+					// AJAX request to Flask backend
+					fetch('/search', {
+						method: 'POST',
+						body: formData
+					})
+					.then(response => response.json())
+					.then(data => {
+						// Process the received cluster data
+						console.log(data);  // Log the received data for debugging
+
+						// Display the result section
+						document.querySelector('.result').style.display = 'block';
+						initializeMap(data);
+					})
+					.catch(error => {
+						console.error('Error:', error);
+					});
 				}
 
 				function resetResult(){

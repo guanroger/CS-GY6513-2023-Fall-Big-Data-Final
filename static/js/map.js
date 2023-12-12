@@ -1,5 +1,12 @@
 var map;
 
+function removeMap(){
+    // remove the map if one exists already
+    if (map != undefined) {
+        map.remove();
+    }
+}
+
 // Function to create a marker and set up the hover event
 function createHoverMarker(lat, lng, popupText) {
     var marker = L.marker([lat, lng]).addTo(map);
@@ -13,19 +20,25 @@ function createHoverMarker(lat, lng, popupText) {
     });
 }
 
-function initializeMap() {
+function initializeMap(data) {
     map = L.map('map').setView([40.7128, -74.0060], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // // Adding markers
-    // var marker1 = L.marker([40.785091, -73.968285]).addTo(map);
-    // var marker2 = L.marker([40.712776, -74.005974]).addTo(map);
-    // var marker3 = L.marker([40.706001, -73.996563]).addTo(map);
+    // a loop that creates a marker for each data point
+    for (var i = 0; i < data.length; i++) {
+        var lng = data[i][0];
+        var lat = data[i][1];
+        var revenue = data[i][2];
+        var tip = data[i][3];
+        var price = Math.round(revenue + tip);
+        var popupText = "$" + price;
+        createHoverMarker(lat, lng, popupText);
+    }
 
-    // Optionally, you can add popups to these markers
-    createHoverMarker(40.785091, -73.968285, "$15");
-    createHoverMarker(40.712776, -74.005974, "$20");
-    createHoverMarker(40.706001, -73.996563, "$30");
+    
+    // createHoverMarker(40.785091, -73.968285, "$15");
+    // createHoverMarker(40.712776, -74.005974, "$20");
+    // createHoverMarker(40.706001, -73.996563, "$30");
 }
