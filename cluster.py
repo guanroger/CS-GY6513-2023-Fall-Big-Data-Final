@@ -8,9 +8,11 @@ import pyspark
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
 from pyspark.sql.functions import (avg, col, count, date_format, hour, lit,
-                                   minute, sum, to_timestamp, udf, when)
+                                   minute, sum, to_timestamp, udf, when, lower)
 from pyspark.sql.types import (ArrayType, DoubleType, FloatType, IntegerType,
                                StringType)
+
+import haversine as hs
 
 # May need to change this depending on where you are running the code
 DATA = [
@@ -91,7 +93,36 @@ def calculate_center(vertices):
     """
     return np.mean(vertices, axis=0).tolist()
 
-def get_hotspots(time: str):
+# Function to handle type conversion and get distance
+def calculate_distance(long_1, lat_1, long_2, lat_2):
+    """
+    Given two coordinates, calculate the distance between them
+
+    Parameters
+    ----------
+    long_1 : float
+        Longitude of first coordinate
+    lat_1 : float
+        Latitude of first coordinate
+    long_2 : float
+        Longitude of second coordinate
+    lat_2 : float
+        Latitude of second coordinate
+
+    Returns
+    -------
+    float
+        Distance between the two coordinates
+    """
+
+    long_1, lat_1 = float(long_1), float(lat_1)
+    long_2, lat_2 = float(long_2), float(lat_2)
+    
+    dist = hs.haversine((long_1, lat_1), (long_2, lat_2), unit='mi')
+    
+    return float(dist)
+
+def get_hotspots(time: str, location: tuple, borough: str = None):
     """
     Given a time, determine hotspots using KMeans clustering
 
@@ -99,6 +130,10 @@ def get_hotspots(time: str):
     ----------
     time : str
         Time to use for clustering (example: '15:00:00')
+    location : tuple
+        Tuple containing the latitude and longitude of the user's location
+    borough : str, optional
+        Borough to filter data by (example: 'Manhattan')
 
     Returns
     -------
@@ -124,7 +159,7 @@ def get_hotspots(time: str):
     zones = spark.read.csv(ZONES, header=True)
 
     # Creating dataframe for pickup
-    pickup_zone = zones.selectExpr("LocationID as LocationID_PU", "Zone as Zone_PU", "the_geom as Geometry")
+    pickup_zone = zones.selectExpr("LocationID as LocationID_PU", "Zone as Zone_PU", "the_geom as Geometry", "borough as Borough_PU")
 
     # Modify pickup_zone to contain center coordinates for each zone 
     coords_udf = udf(extract_coords, ArrayType(ArrayType(DoubleType())))
@@ -137,13 +172,23 @@ def get_hotspots(time: str):
 
     df_zones = df.join(zone_with_centers, df.PULocationID == zone_with_centers.LocationID_PU, how='left')
 
-    windowed_df = df_zones.withColumn("hour", hour("tpep_pickup_datetime")) \
+    if borough:
+        windowed_df = df_zones.withColumn("hour", hour("tpep_pickup_datetime")) \
                         .withColumn("minute", minute("tpep_pickup_datetime")) \
                         .withColumn("user_hour", hour(lit(time))) \
                         .withColumn("user_minute", minute(lit(time))) \
                         .withColumn("time_diff", (col("hour") * 60 + col("minute")) - (col("user_hour") * 60 + col("user_minute"))) \
                         .filter((col("time_diff") >= -30) & (col("time_diff") <= 30)) \
+                        .filter(lower(col("Borough_PU")) == borough.lower()) \
                         .select('tpep_pickup_datetime', 'tpep_dropoff_datetime', 'time_diff', 'Trip_distance', 'Passenger_count', 'PULocationID','DOLocationID', 'Zone_PU','long', 'lat', 'tip_amount', 'total_amount')
+    else:
+        windowed_df = df_zones.withColumn("hour", hour("tpep_pickup_datetime")) \
+                            .withColumn("minute", minute("tpep_pickup_datetime")) \
+                            .withColumn("user_hour", hour(lit(time))) \
+                            .withColumn("user_minute", minute(lit(time))) \
+                            .withColumn("time_diff", (col("hour") * 60 + col("minute")) - (col("user_hour") * 60 + col("user_minute"))) \
+                            .filter((col("time_diff") >= -30) & (col("time_diff") <= 30)) \
+                            .select('tpep_pickup_datetime', 'tpep_dropoff_datetime', 'time_diff', 'Trip_distance', 'Passenger_count', 'PULocationID','DOLocationID', 'Zone_PU','long', 'lat', 'tip_amount', 'total_amount')
 
     # Run KMeans clustering to determine pickup hotspots
     assembler = VectorAssembler(inputCols = ['long','lat'], outputCol='features', handleInvalid="skip")
@@ -181,10 +226,15 @@ def get_hotspots(time: str):
     cluster_centers = cluster_centers.join(avg_revenue, on='Cluster', how='left')
     cluster_centers = cluster_centers.join(avg_tip, on='Cluster', how='left')
 
+    # Determine the top 3 closest clusters to the user's location
+    distance_udf = udf(calculate_distance, FloatType())
+    cluster_centers = cluster_centers.withColumn('distance', distance_udf(col('Centroid Longitude'), col('Centroid Latitude'), lit(location[0]), lit(location[1]))) \
+                                    .orderBy('distance') \
+                                    .limit(3)
+
     # Get cluster centers, average revenue, and average tip as a list of tuples
     cluster_centers = cluster_centers.collect()
     cluster_centers = [(x['Centroid Longitude'], x['Centroid Latitude'], x['Average Revenue'], x['Average Tip']) for x in cluster_centers]
 
     sc.stop()
-
     return cluster_centers

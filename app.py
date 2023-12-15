@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from cluster import get_spark_context, get_data, extract_coords, calculate_center, get_hotspots
+from geopy.geocoders import Nominatim
 
 app = Flask(__name__)
 # May need to change this depending on where you are running the code
@@ -29,13 +30,40 @@ def search():
         address = request.form.get('demo-address')
         zip_code = request.form.get('demo-zip')
         date = request.form.get('demo-date')
-        time = request.form.get('demo-time')  # This is the time field
 
+        time = request.form.get('demo-time')  # This is the time field
         time = time + ":00" # to match the format that the function needs
-        cluster_info = get_hotspots(time)
+
+        coords = convert_address_to_coords(address, borough, zip_code)
+        if coords == (None, None):
+            #TODO: error handling on frontend
+            #TODO: also figure out mongoDB stuff
+            pass
+        cluster_info = get_hotspots(time, coords, borough)
         print(cluster_info)
 
-        return jsonify(cluster_info)
+        return cluster_info
+
+def convert_address_to_coords(address, borough, zip_code):
+    """
+        address is a string
+        returns a tuple of (longitude, latitude)
+        https://medium.com/@hazallgultekin/convert-address-to-latitude-longitude-using-python-21844da3d032
+    """
+    address = f"{address}, {borough}, New York, NY {zip_code}"
+    # Initialize Nominatim API
+    geolocator = Nominatim(user_agent="taxi_app")
+
+    # Geocode the address
+    location = geolocator.geocode(address)
+
+    # Check if location is found
+    if location:
+        return (location.latitude, location.longitude)
+    else:
+        return None, None
+
+
 
 
 def parse_cluster_info(cluster_info):
