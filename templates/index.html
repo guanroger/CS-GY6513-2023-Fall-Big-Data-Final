@@ -89,10 +89,10 @@
 										</div>
 										<div><h3>Time</h3></div>
 										<div class="fields">
-											<div class="field half">
+											<!-- <div class="field half">
 												<label for="demo-date">Select Date</label>
 												<input type="date" name="demo-date" id="demo-date" value="" placeholder=""/>
-											</div>
+											</div> -->
 											<div class="field half">
 												<label for="demo-time">Select Time</label>
 												<input type="time" name="demo-time" id="demo-time" class="timepicker" />
@@ -549,10 +549,15 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 					.then(data => {
 						// Process the received cluster data
 						console.log(data);  // Log the received data for debugging
-
-						// Display the result section
-						document.querySelector('.result').style.display = 'block';
-						initializeMap(data);
+						if (data.error){
+							console.error('Error:', data.error);
+            				alert(data.error);  // Display an alert or modify the DOM to show the error
+						} else{
+							// Display the result section
+							document.querySelector('.result').style.display = 'block';
+							initializeMap(data.data);
+						}
+						
 					})
 					.catch(error => {
 						console.error('Error:', error);

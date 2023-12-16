@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from cluster import get_spark_context, get_data, extract_coords, calculate_center, get_hotspots
+from cluster import get_hotspots, load_to_mongo
 from geopy.geocoders import Nominatim
 
 app = Flask(__name__)
@@ -17,9 +17,12 @@ DATA = [
 ]
 ZONES = './content/taxi_zones.csv'
 SEED = 42
+INITIALIZE = False
 
 @app.route('/')
 def home():
+    if INITIALIZE:
+        load_to_mongo(DATA)
     return render_template('index.html')
 
 @app.route('/search', methods=['GET', 'POST']) # line 67 in index.hmtl
@@ -29,20 +32,18 @@ def search():
         borough = request.form.get('demo-category')
         address = request.form.get('demo-address')
         zip_code = request.form.get('demo-zip')
-        date = request.form.get('demo-date')
+        # date = request.form.get('demo-date')
 
         time = request.form.get('demo-time')  # This is the time field
         time = time + ":00" # to match the format that the function needs
 
         coords = convert_address_to_coords(address, borough, zip_code)
         if coords == (None, None):
-            #TODO: error handling on frontend
-            #TODO: also figure out mongoDB stuff
-            pass
+            return jsonify({'error': 'Invalid address. Please check the address and try again.'})
         cluster_info = get_hotspots(time, coords, borough)
         print(cluster_info)
 
-        return cluster_info
+        return jsonify({'data': cluster_info})
 
 def convert_address_to_coords(address, borough, zip_code):
     """
@@ -55,7 +56,7 @@ def convert_address_to_coords(address, borough, zip_code):
     geolocator = Nominatim(user_agent="taxi_app")
 
     # Geocode the address
-    location = geolocator.geocode(address)
+    location = geolocator.geocode(address, timeout=10)
 
     # Check if location is found
     if location:

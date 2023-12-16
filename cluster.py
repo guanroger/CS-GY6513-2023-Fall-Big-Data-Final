@@ -3,8 +3,9 @@ import re
 
 # import matplotlib.pyplot as plt
 import numpy as np
-# import pandas as pd
+import pandas as pd
 import pyspark
+from pymongo import MongoClient
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
 from pyspark.sql.functions import (avg, col, count, date_format, hour, lit,
@@ -28,6 +29,15 @@ DATA = [
 ]
 ZONES = './content/taxi_zones.csv'
 SEED = 42
+INITIALIZE = True
+
+### Mongo Params ###
+# MONGO_HOST = 'mongo-csgy-6513-fall.db'
+MONGO_HOST = "mongodb://localhost:27017/"
+#MONGO_PORT = 27017
+MONGO_DB = '_db'
+MONGO_USER = '_'
+MONGO_PASS = '_'
 
 def get_spark_context():
     """
@@ -42,35 +52,72 @@ def get_spark_context():
     """
     conf = pyspark.SparkConf()
     conf.set('spark.driver.memory','4g')
+    conf.set('spark.mongodb.input.uri', MONGO_HOST + MONGO_DB + '.taxi_data')
+    conf.set('spark.mongodb.output.uri', MONGO_HOST + MONGO_DB + '.taxi_data')
+
 
     sc = pyspark.SparkContext(conf=conf)
     spark = pyspark.SQLContext.getOrCreate(sc)
     return sc, spark
 
-def get_data(spark, paths: list):
+def load_to_mongo(paths: list):
     """
-    Get data from parquet files
+        First time setup to load parquet files into MongoDB
+
+        Parameters
+        ----------
+        paths : list
+            List of paths to parquet files
+        
+        Returns
+        -------
+        None
+    """
+    client = MongoClient(MONGO_HOST)
+    print("connected to mongo")
+    db = client[MONGO_DB]
+
+    collection = db['taxi_data']
+
+    # For each path, read in the parquet files and insert them into MongoDB
+    for path in paths:
+        print(f"Loading {path} into MongoDB")
+        df = pd.read_parquet(path)
+        df = df.to_dict('records')
+        collection.insert_many(df)
+    
+    client.close()
+
+def get_data(spark):
+    """
+    Get data from MongoDB
 
     Parameters
     ----------
     spark : pyspark.sql.session.SparkSession
         Spark session
-    paths : list
-        List of paths to parquet files
 
     Returns
     -------
     pyspark.sql.dataframe.DataFrame
         Dataframe containing data from all parquet files
     """
+    client = MongoClient(MONGO_HOST)
+    db = client[MONGO_DB]
 
-    # For each path, read in the parquet files and union them together
-    df = None
-    for path in paths:
-        if df is None:
-            df = spark.read.parquet(path)
-        else:
-            df = df.union(spark.read.parquet(path))
+    collection = db['taxi_data']
+
+    # Get data from MongoDB
+    print("Getting data from MongoDB")
+    # df = spark.createDataFrame(collection.find())
+    dataFrame = spark.read \
+                 .format("mongodb") \
+                 .option("database", MONGO_DB) \
+                 .option("collection", "taxi_data") \
+                 .load()
+    print("Got data from MongoDB")
+    client.close()
+
     return df
 
 def extract_coords(input_string):
@@ -144,7 +191,11 @@ def get_hotspots(time: str, location: tuple, borough: str = None):
     sc, spark = get_spark_context()
 
     # Get data
-    df = get_data(spark, DATA)
+    # if INITIALIZE:
+    #     load_to_mongo(DATA)
+    
+    df = get_data(spark)
+    print("GOT DF")
 
     # Clean data
     df = df.dropna()
