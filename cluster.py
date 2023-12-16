@@ -5,6 +5,7 @@ import re
 import numpy as np
 import pandas as pd
 import pyspark
+import pymongo
 from pymongo import MongoClient
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
@@ -50,14 +51,21 @@ def get_spark_context():
     pyspark.sql.session.SparkSession
         Spark session
     """
+    print("spark version is: ", pyspark.__version__)
+    print("Mongo version is: ", pymongo.__version__)
+
     conf = pyspark.SparkConf()
-    conf.set('spark.driver.memory','4g')
-    conf.set('spark.mongodb.input.uri', MONGO_HOST + MONGO_DB + '.taxi_data')
-    conf.set('spark.mongodb.output.uri', MONGO_HOST + MONGO_DB + '.taxi_data')
+    conf.set('spark.driver.memory','8g')
+    conf.set("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:10.2.1") ## added for interfacing with mongo
 
 
     sc = pyspark.SparkContext(conf=conf)
-    spark = pyspark.SQLContext.getOrCreate(sc)
+    # spark = pyspark.SQLContext.getOrCreate(sc)
+    # spark = pyspark.sql.SparkSession(sc)
+    spark = pyspark.sql.SparkSession.builder \
+                .config("spark.mongodb.input.uri", MONGO_HOST + MONGO_DB + ".taxi_data") \
+                .config("spark.mongodb.output.uri", MONGO_HOST + MONGO_DB + ".taxi_data") \
+                .getOrCreate()
     return sc, spark
 
 def load_to_mongo(paths: list):
@@ -110,12 +118,16 @@ def get_data(spark):
     # Get data from MongoDB
     print("Getting data from MongoDB")
     # df = spark.createDataFrame(collection.find())
-    dataFrame = spark.read \
+    df = spark.read \
                  .format("mongodb") \
                  .option("database", MONGO_DB) \
                  .option("collection", "taxi_data") \
                  .load()
-    print("Got data from MongoDB")
+
+    # dataframe = spark.read.format("com.mongodb.spark.sql.DefaultSource") \
+    #                       .option("spark.mongodb.input.uri", MONGO_HOST + MONGO_DB + ".taxi_data") \
+    #                       .load()
+
     client.close()
 
     return df
@@ -195,9 +207,11 @@ def get_hotspots(time: str, location: tuple, borough: str = None):
     #     load_to_mongo(DATA)
     
     df = get_data(spark)
-    print("GOT DF")
+    print("GOT DF from mongoDB")
+    df.printSchema()
 
     # Clean data
+    df = df.drop("Airport_fee")  # somehow there is a duplicate column in the data
     df = df.dropna()
     df = df.withColumn("Passenger_count", df["Passenger_count"].cast(IntegerType()))
     df = df.withColumn("Trip_distance", df["Trip_distance"].cast(FloatType()))
@@ -208,6 +222,7 @@ def get_hotspots(time: str, location: tuple, borough: str = None):
 
     # Get zones data
     zones = spark.read.csv(ZONES, header=True)
+    zones.printSchema()
 
     # Creating dataframe for pickup
     pickup_zone = zones.selectExpr("LocationID as LocationID_PU", "Zone as Zone_PU", "the_geom as Geometry", "borough as Borough_PU")
