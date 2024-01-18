@@ -11,6 +11,7 @@ Gunicorn
 haversine==2.8.0
 importlib-metadata==7.0.0
 itsdangerous==2.1.2
+jdk
 java==17.0.1
 Jinja2==3.1.2
 MarkupSafe==2.1.3
