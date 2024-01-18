@@ -7,6 +7,7 @@ Flask==3.0.0
 fsspec==2023.12.2
 geographiclib==2.0
 geopy==2.4.1
+Gunicorn
 haversine==2.8.0
 importlib-metadata==7.0.0
 itsdangerous==2.1.2
@@ -25,4 +26,3 @@ six==1.16.0
 tzdata==2023.3
 Werkzeug==3.0.1
 zipp==3.17.0
-Gunicorn
