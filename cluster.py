@@ -5,7 +5,6 @@ import re
 import numpy as np
 import pandas as pd
 import pyspark
-import pymongo
 from pymongo import MongoClient
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
@@ -14,7 +13,6 @@ from pyspark.sql.functions import (avg, col, count, date_format, hour, lit,
 from pyspark.sql.types import (ArrayType, DoubleType, FloatType, IntegerType,
                                StringType)
 
-import pprint
 import haversine as hs
 
 # May need to change this depending on where you are running the code
@@ -52,21 +50,14 @@ def get_spark_context():
     pyspark.sql.session.SparkSession
         Spark session
     """
-    print("spark version is: ", pyspark.__version__)
-    print("Mongo version is: ", pymongo.__version__)
-
     conf = pyspark.SparkConf()
-    conf.set('spark.driver.memory','8g')
-    conf.set("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.1") ## added for interfacing with mongo
+    conf.set('spark.driver.memory','4g')
+    conf.set('spark.mongodb.input.uri', MONGO_HOST + MONGO_DB + '.taxi_data')
+    conf.set('spark.mongodb.output.uri', MONGO_HOST + MONGO_DB + '.taxi_data')
 
 
     sc = pyspark.SparkContext(conf=conf)
-    # spark = pyspark.SQLContext.getOrCreate(sc)
-    spark = pyspark.sql.SparkSession(sc)
-    # spark = pyspark.sql.SparkSession.builder \
-    #             .config("spark.mongodb.input.uri", MONGO_HOST + MONGO_DB + ".taxi_data") \
-    #             .config("spark.mongodb.output.uri", MONGO_HOST + MONGO_DB + ".taxi_data") \
-    #             .getOrCreate()
+    spark = pyspark.SQLContext.getOrCreate(sc)
     return sc, spark
 
 def load_to_mongo(paths: list):
@@ -85,76 +76,74 @@ def load_to_mongo(paths: list):
     client = MongoClient(MONGO_HOST)
     print("connected to mongo")
     db = client[MONGO_DB]
-    db.drop_collection('taxi_data')
+
     collection = db['taxi_data']
 
     # For each path, read in the parquet files and insert them into MongoDB
     for path in paths:
         print(f"Loading {path} into MongoDB")
         df = pd.read_parquet(path)
-        df.columns = [col.lower() for col in df.columns]
         df = df.to_dict('records')
         collection.insert_many(df)
-
+    
     client.close()
 
+# def get_data(spark):
+#     """
+#     Get data from MongoDB
 
-def show_collection_schema():
+#     Parameters
+#     ----------
+#     spark : pyspark.sql.session.SparkSession
+#         Spark session
+
+#     Returns
+#     -------
+#     pyspark.sql.dataframe.DataFrame
+#         Dataframe containing data from all parquet files
+#     """
+#     client = MongoClient(MONGO_HOST)
+#     db = client[MONGO_DB]
+
+#     collection = db['taxi_data']
+
+#     # Get data from MongoDB
+#     print("Getting data from MongoDB")
+#     # df = spark.createDataFrame(collection.find())
+#     dataFrame = spark.read \
+#                  .format("mongodb") \
+#                  .option("database", MONGO_DB) \
+#                  .option("collection", "taxi_data") \
+#                  .load()
+#     print("Got data from MongoDB")
+#     client.close()
+
+#     return df
+
+def get_data(spark, paths: list):
     """
-    Show the schema of the MongoDB collection
-
-    Returns
-    -------
-    None
-    """
-    client = MongoClient(MONGO_HOST)
-    db = client[MONGO_DB]
-    collection = db['taxi_data']
-
-    documents = collection.find().limit(10)
-    schema = {}
-    for doc in documents:
-        for key, value in doc.items():
-            schema[key] = type(value).__name__
-
-    pprint.pprint(schema)
-
-    client.close()
-
-def get_data(spark):
-    """
-    Get data from MongoDB
+    Get data from parquet files
 
     Parameters
     ----------
     spark : pyspark.sql.session.SparkSession
         Spark session
+    paths : list
+        List of paths to parquet files
 
     Returns
     -------
     pyspark.sql.dataframe.DataFrame
         Dataframe containing data from all parquet files
     """
-    client = MongoClient(MONGO_HOST)
-    db = client[MONGO_DB]
-    collection = db['taxi_data']
-    uri = MONGO_HOST + MONGO_DB + ".taxi_data"
 
-    # Get data from MongoDB
-    print("Getting data from MongoDB")
-    # # df = spark.createDataFrame(collection.find())
-    # df = spark.read \
-    #              .format("mongodb") \
-    #              .option("database", MONGO_DB) \
-    #              .option("collection", "taxi_data") \
-    #              .load()
-    df = spark.read.format("com.mongodb.spark.sql.DefaultSource") \
-                    .option("uri", uri) \
-                    .load()
-
-    client.close()
-
-
+    # For each path, read in the parquet files and union them together
+    df = None
+    for path in paths:
+        if df is None:
+            df = spark.read.parquet(path)
+        else:
+            df = df.union(spark.read.parquet(path))
     return df
 
 def extract_coords(input_string):
@@ -231,15 +220,13 @@ def get_hotspots(time: str, location: tuple, borough: str = None):
     # if INITIALIZE:
     #     load_to_mongo(DATA)
     
-    df = get_data(spark)
-    print("GOT DF from mongoDB")
-    df.printSchema()
+    df = get_data(spark, DATA)
+    print("GOT DF")
 
     # Clean data
-    # df = df.drop("Airport_fee")  # somehow there is a duplicate column in the data
     df = df.dropna()
-    df = df.withColumn("passenger_count", df["passenger_count"].cast(IntegerType()))
-    df = df.withColumn("trip_distance", df["trip_distance"].cast(FloatType()))
+    df = df.withColumn("Passenger_count", df["Passenger_count"].cast(IntegerType()))
+    df = df.withColumn("Trip_distance", df["Trip_distance"].cast(FloatType()))
 
     # Extracting the hour from the pickoff/dropoff columns
     df = df.withColumn("pickup_hour", hour("tpep_pickup_datetime"))
@@ -247,7 +234,6 @@ def get_hotspots(time: str, location: tuple, borough: str = None):
 
     # Get zones data
     zones = spark.read.csv(ZONES, header=True)
-    zones.printSchema()
 
     # Creating dataframe for pickup
     pickup_zone = zones.selectExpr("LocationID as LocationID_PU", "Zone as Zone_PU", "the_geom as Geometry", "borough as Borough_PU")
@@ -261,7 +247,7 @@ def get_hotspots(time: str, location: tuple, borough: str = None):
                                 .withColumn('long', col('centroids')[0]) \
                                 .withColumn('lat', col('centroids')[1])
 
-    df_zones = df.join(zone_with_centers, df.pulocationid == zone_with_centers.LocationID_PU, how='left')
+    df_zones = df.join(zone_with_centers, df.PULocationID == zone_with_centers.LocationID_PU, how='left')
 
     if borough:
         windowed_df = df_zones.withColumn("hour", hour("tpep_pickup_datetime")) \

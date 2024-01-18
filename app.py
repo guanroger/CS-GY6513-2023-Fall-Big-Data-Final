@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from cluster import get_hotspots, load_to_mongo, show_collection_schema
+from cluster import get_hotspots, load_to_mongo
 from geopy.geocoders import Nominatim
 
 app = Flask(__name__)
@@ -21,9 +21,8 @@ INITIALIZE = False
 
 @app.route('/')
 def home():
-    if INITIALIZE:
-        # load_to_mongo(DATA)
-        show_collection_schema()
+    # if INITIALIZE:
+    #     load_to_mongo(DATA)
     return render_template('index.html')
 
 @app.route('/search', methods=['GET', 'POST']) # line 67 in index.hmtl

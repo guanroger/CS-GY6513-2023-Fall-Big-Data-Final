@@ -99,8 +99,8 @@
 											</div>
 										</div>
 										<ul class="actions">
-											<li><input type="submit" value="Start Searching" class="button primary" /></li>
-											<li><input type="reset" value="Reset" id="reset-btn"/></li>
+											<li><input id="formSubmit" type="submit" value="Start Searching" class="button primary"/></li>
+											<li><input id="formReset" type="reset" value="Reset" id="reset-btn"/></li>
 										</ul>
 									</form>
 									<section class="result" style="display: none;">
@@ -535,6 +535,8 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 				    // Prevent the default form submission
 					// event.preventDefault();
 					removeMap(); // only removes if a map existed already
+					document.getElementById('formSubmit').disabled = true;
+					document.getElementById('formReset').disabled = true;
 					console.log("Form submitted")
 
 					// Gather form data
@@ -556,12 +558,20 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 							// Display the result section
 							document.querySelector('.result').style.display = 'block';
 							initializeMap(data.data);
+							
 						}
+
+						document.getElementById('formSubmit').disabled = false;
+						document.getElementById('formReset').disabled = false;
 						
 					})
 					.catch(error => {
 						console.error('Error:', error);
+						document.getElementById('formSubmit').disabled = false;
+						document.getElementById('formReset').disabled = false;
 					});
+
+
 				}
 
 				function resetResult(){

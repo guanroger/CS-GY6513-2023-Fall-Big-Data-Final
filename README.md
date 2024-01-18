@@ -1,6 +1,3 @@
-# Dimension by HTML5 UP
-html5up.net | @ajlkn
-
 # SwiftPick Codebase
 
 ### Setting up the Python Environment
