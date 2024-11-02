@@ -1,3 +1,6 @@
+This is a demo for NYU Tandon CS-GY 6533 Big Data Final Project.
+This project focuses on creating a web application that empowers users to input specific time windows and geographical locations to obtain insights into average trip costs and strategic recommendations for drivers to maximize profitability. Our primary dataset comes from the New York City Taxi & Limousine Commission (TLC), and employed MongoDB to store our data. Then, we utilized JupyterLab for data visualization, analysis, and integrate with Front-end Web Development using Flask.
+
 # Dimension by HTML5 UP
 html5up.net | @ajlkn
 
